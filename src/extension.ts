@@ -111,56 +111,32 @@ class DeepSeekPanel {
 					border-radius: 5px;
 				}
 				.message {
-					margin-bottom: 15px;
-					padding: 10px;
-					border-radius: 5px;
+					margin-bottom: 20px;
+					padding: 15px;
+					border-radius: 8px;
+					box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 				}
 				.user-message {
 					background: #2d2d2d;
-					border-left: 3px solid #007acc;
+					border-left: 4px solid #007acc;
 				}
 				.ai-message {
 					background: #2d2d2d;
-					border-left: 3px solid #4CAF50;
+					border-left: 4px solid #4CAF50;
 				}
 				.message-header {
-					font-weight: bold;
-					margin-bottom: 5px;
-					color: #cccccc;
+					font-weight: 600;
+					margin-bottom: 8px;
+					color: #e0e0e0;
+					font-size: 0.9em;
+					text-transform: uppercase;
+					letter-spacing: 0.5px;
 				}
 				.message-content {
 					white-space: pre-wrap;
-					line-height: 1.4;
-				}
-				.code-block {
-					background: #1e1e1e;
-					padding: 10px;
-					border-radius: 5px;
-					font-family: 'Consolas', 'Courier New', monospace;
-					margin: 10px 0;
-					position: relative;
-				}
-				.code-block-header {
-					background: #333;
-					padding: 5px 10px;
-					border-radius: 5px 5px 0 0;
-					font-size: 0.9em;
-					color: #ccc;
-				}
-				.copy-button {
-					position: absolute;
-					right: 5px;
-					top: 5px;
-					background: #333;
-					border: none;
-					color: #fff;
-					padding: 5px 10px;
-					border-radius: 3px;
-					cursor: pointer;
-					font-size: 12px;
-				}
-				.copy-button:hover {
-					background: #444;
+					line-height: 1.6;
+					color: #e0e0e0;
+					font-size: 14px;
 				}
 				.input-area {
 					display: flex;
@@ -201,7 +177,7 @@ class DeepSeekPanel {
 			<script>
 				const vscode = acquireVsCodeApi();
 				const userInput = document.getElementById('userInput');
-
+	
 				function sendMessage() {
 					const message = userInput.value.trim();
 					if (message) {
@@ -210,41 +186,7 @@ class DeepSeekPanel {
 						userInput.value = '';
 					}
 				}
-
-				function copyToClipboard(text) {
-					navigator.clipboard.writeText(text).then(() => {
-						// Could add a copied confirmation here
-					});
-				}
-
-				function detectAndFormatCodeBlocks(text) {
-					const codeBlockRegex = /\`\`\`([\w-]*)([\s\S]*?)\`\`\`/g;
-					let formattedText = text;
-					let match;
-					
-					while ((match = codeBlockRegex.exec(text)) !== null) {
-						const language = match[1];
-						const code = match[2].trim();
-						const replacement = 
-							'<div class="code-block">' +
-							'<div class="code-block-header">' + (language || 'plaintext') + '</div>' +
-							'<button class="copy-button" onclick="copyToClipboard(' + JSON.stringify(code) + ')">Copy</button>' +
-							'<pre><code>' + escapeHtml(code) + '</code></pre>' +
-							'</div>';
-						formattedText = formattedText.replace(match[0], replacement);
-					}
-					return formattedText;
-				}
-
-				function escapeHtml(unsafe) {
-					return unsafe
-						.replace(/&/g, "&amp;")
-						.replace(/</g, "&lt;")
-						.replace(/>/g, "&gt;")
-						.replace(/"/g, "&quot;")
-						.replace(/'/g, "&#039;");
-				}
-
+	
 				function appendMessage(sender, text, isUser) {
 					const messagesDiv = document.getElementById('messages');
 					const messageDiv = document.createElement('div');
@@ -256,23 +198,21 @@ class DeepSeekPanel {
 					
 					const contentDiv = document.createElement('div');
 					contentDiv.className = 'message-content';
-					
-					const formattedText = detectAndFormatCodeBlocks(text);
-					contentDiv.innerHTML = formattedText;
+					contentDiv.textContent = text;
 					
 					messageDiv.appendChild(headerDiv);
 					messageDiv.appendChild(contentDiv);
 					messagesDiv.appendChild(messageDiv);
 					messagesDiv.scrollTop = messagesDiv.scrollHeight;
 				}
-
+	
 				userInput.addEventListener('keydown', (e) => {
 					if (e.key === 'Enter' && !e.shiftKey) {
 						e.preventDefault();
 						sendMessage();
 					}
 				});
-
+	
 				window.addEventListener('message', event => {
 					const message = event.data;
 					if (message.command === 'response') {
@@ -283,6 +223,7 @@ class DeepSeekPanel {
 		</body>
 		</html>`;
 	}
+	
 
 	private async getDeepSeekResponse(input: string): Promise<string> {
 		try {
