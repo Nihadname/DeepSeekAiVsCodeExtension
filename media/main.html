@@ -1,9 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DeepSeek AI Chat</title>
+
+    <!-- ✅ Fix: Ensure Highlight.js is included -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="${styleUri}">
 </head>
 <body>
@@ -14,6 +18,16 @@
             <button onclick="sendMessage()">Send</button>
         </div>
     </div>
+
+    <!-- Custom Script -->
     <script src="${scriptUri}"></script>
+
+    <!-- ✅ Fix: Initialize Highlight.js after the DOM is ready -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll("pre code").forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        });
+    </script>
 </body>
-</html>
