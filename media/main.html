@@ -1,33 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepSeek AI Chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DeepSeek AI Chat</title>
 
-    <!-- ✅ Fix: Ensure Highlight.js is included -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"
+  />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="${styleUri}">
+  <!-- Markdown-it and plugins -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it-highlightjs/4.0.1/markdown-it-highlightjs.min.js"></script>
+
+  <link rel="stylesheet" href="${styleUri}" />
+
+  <style>
+    /* Reset and Base Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol");
+      font-size: var(--vscode-font-size, 14px);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, var(--vscode-editor-background) 0%, var(--vscode-editorGroup-background) 100%);
+      color: var(--vscode-editor-foreground);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Main Container */
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100%;
+      margin: 0;
+      position: relative;
+      background: var(--vscode-editorGroup-background);
+      overflow: hidden;
+    }
+
+    /* Header */
+    .chat-header {
+      background: var(--vscode-sideBar-background);
+      color: var(--vscode-sideBar-foreground);
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--vscode-sideBar-border);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .chat-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* Messages Container */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px;
+      background: var(--vscode-sideBar-background);
+      position: relative;
+      scroll-behavior: smooth;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0; /* Important for flex scrolling */
+    }
+
+    /* Custom Scrollbar */
+    #messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #messages::-webkit-scrollbar-track {
+      background: var(--vscode-scrollbarSlider-background);
+      border-radius: 3px;
+    }
+
+    #messages::-webkit-scrollbar-thumb {
+      background: var(--vscode-scrollbarSlider-hoverBackground);
+      border-radius: 3px;
+      transition: background 0.2s ease;
+    }
+
+    #messages::-webkit-scrollbar-thumb:hover {
+      background: var(--vscode-scrollbarSlider-activeBackground);
+    }
+
+    /* Message Styling */
+    .message {
+      max-width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      position: relative;
+      animation: messageSlideIn 0.3s ease-out;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .message:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .user-message {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      margin-left: 20px;
+      position: relative;
+    }
+
+    .user-message::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -6px;
+      width: 0;
+      height: 0;
+      border: 6px solid transparent;
+      border-left-color: var(--vscode-button-background);
+      border-bottom: none;
+      border-right: none;
+    }
+
+    .ai-message {
+      background: var(--vscode-sideBar-background);
+      color: var(--vscode-sideBar-foreground);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      margin-right: 20px;
+      position: relative;
+      border: 1px solid var(--vscode-sideBar-border);
+    }
+
+    .ai-message::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: -6px;
+      width: 0;
+      height: 0;
+      border: 6px solid transparent;
+      border-right-color: var(--vscode-sideBar-background);
+      border-bottom: none;
+      border-left: none;
+    }
+
+    .message-header {
+      font-weight: 600;
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      color: var(--vscode-descriptionForeground);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .user-message .message-header {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .message-header::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .message-content {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: inherit;
+    }
+
+    /* Enhanced Markdown Styling */
+    .message-content p {
+      margin: 0.5em 0;
+    }
+
+    .message-content p:first-child {
+      margin-top: 0;
+    }
+
+    .message-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message-content h1, .message-content h2, .message-content h3, 
+    .message-content h4, .message-content h5, .message-content h6 {
+      margin: 0.8em 0 0.4em 0;
+      color: var(--vscode-sideBar-foreground);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .message-content h1 { font-size: 1.3em; }
+    .message-content h2 { font-size: 1.2em; }
+    .message-content h3 { font-size: 1.1em; }
+    .message-content h4 { font-size: 1.05em; }
+    .message-content h5 { font-size: 1em; }
+    .message-content h6 { font-size: 0.95em; }
+
+    .message-content ul, .message-content ol {
+      margin: 0.5em 0;
+      padding-left: 1.5em;
+    }
+
+    .message-content li {
+      margin: 0.3em 0;
+      line-height: 1.4;
+    }
+
+    .message-content blockquote {
+      margin: 0.8em 0;
+      padding: 0.8em 1.2em;
+      border-left: 3px solid var(--vscode-focusBorder);
+      background: var(--vscode-editor-background);
+      color: var(--vscode-descriptionForeground);
+      font-style: italic;
+      border-radius: 0 6px 6px 0;
+      position: relative;
+    }
+
+    .message-content blockquote::before {
+      content: '"';
+      font-size: 1.5em;
+      color: var(--vscode-focusBorder);
+      position: absolute;
+      top: -0.1em;
+      left: 0.3em;
+    }
+
+    .message-content code {
+      background: var(--vscode-editor-background);
+      color: var(--vscode-editor-foreground);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Consolas, "Courier New", monospace);
+      font-size: 0.85em;
+      border: 1px solid var(--vscode-dropdown-border);
+    }
+
+    .message-content pre {
+      background: var(--vscode-editor-background);
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Consolas, "Courier New", monospace);
+      font-size: 0.8rem;
+      margin: 0.8em 0;
+      border: 1px solid var(--vscode-dropdown-border);
+      position: relative;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .message-content pre::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--vscode-focusBorder), var(--vscode-button-background));
+      border-radius: 6px 6px 0 0;
+    }
+    
+    .message-content pre code {
+      display: block;
+      white-space: pre;
+      background: none;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      font-size: inherit;
+    }
+
+    .message-content table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0.8em 0;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      font-size: 0.85em;
+    }
+
+    .message-content th, .message-content td {
+      border: 1px solid var(--vscode-dropdown-border);
+      padding: 0.5em;
+      text-align: left;
+    }
+
+    .message-content th {
+      background: var(--vscode-editor-background);
+      font-weight: 600;
+      color: var(--vscode-editor-foreground);
+    }
+
+    .message-content tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .message-content a {
+      color: var(--vscode-textLink-foreground);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+
+    .message-content a:hover {
+      border-bottom-color: var(--vscode-textLink-foreground);
+    }
+
+    /* Input Area */
+    .input-area {
+      background: var(--vscode-sideBar-background);
+      padding: 12px;
+      border-top: 1px solid var(--vscode-sideBar-border);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .input-area::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--vscode-focusBorder), transparent);
+    }
+
+    .input-container {
+      flex: 1;
+      position: relative;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--vscode-input-border);
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      font-size: 0.9rem;
+      font-family: inherit;
+      min-height: 40px;
+      max-height: 120px;
+      resize: vertical;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    textarea:focus {
+      border-color: var(--vscode-focusBorder);
+      box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1), 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    textarea::placeholder {
+      color: var(--vscode-descriptionForeground);
+      opacity: 0.7;
+    }
+
+    /* Button Styling */
+    button {
+      background: var(--vscode-button-background);
+      border: none;
+      color: var(--vscode-button-foreground);
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      min-width: 60px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.4s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    button:hover::before {
+      left: 100%;
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Loading Animation */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 0;
+      color: var(--vscode-descriptionForeground);
+      font-size: 0.85rem;
+      font-style: italic;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--vscode-descriptionForeground);
+      animation: typing 1.4s infinite ease-in-out;
+      opacity: 0.7;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typing {
+      0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+      }
+      40% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Setup Instructions */
+    .setup-instructions {
+      padding: 8px 0;
+    }
+
+    .setup-instructions h3 {
+      margin: 0 0 12px 0;
+      color: var(--vscode-sideBar-foreground);
+      font-size: 1.1em;
+    }
+
+    .setup-instructions h4 {
+      margin: 12px 0 6px 0;
+      color: var(--vscode-sideBar-foreground);
+      font-size: 0.95em;
+      font-weight: 600;
+    }
+
+    .setup-instructions p {
+      margin: 6px 0;
+      font-size: 0.85em;
+      line-height: 1.4;
+    }
+
+    .setup-instructions pre {
+      margin: 8px 0;
+      padding: 8px;
+      background: var(--vscode-editor-background);
+      border-radius: 4px;
+      font-size: 0.8em;
+    }
+
+    .setup-instructions code {
+      background: none;
+      padding: 0;
+      border: none;
+      font-size: inherit;
+    }
+
+    .setup-instructions .note {
+      margin-top: 12px;
+      padding: 8px;
+      background: var(--vscode-editor-background);
+      border-radius: 6px;
+      font-size: 0.85em;
+      border-left: 3px solid var(--vscode-focusBorder);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 8px;
+      background: var(--vscode-editor-background);
+      border-radius: 6px;
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-dot.online {
+      background: #4CAF50;
+      box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+    }
+
+    .status-dot.offline {
+      background: #f44336;
+      box-shadow: 0 0 4px rgba(244, 67, 54, 0.5);
+    }
+
+    .status-dot.connecting {
+      background: #ff9800;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+      }
+    }
+
+    .refresh-btn {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: auto;
+    }
+
+    .refresh-btn:hover {
+      background: var(--vscode-button-hoverBackground);
+      transform: scale(1.05);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div id="messages"></div>
-        <div class="input-area">
-            <textarea id="userInput" placeholder="Ask DeepSeek AI..."></textarea>
-            <button onclick="sendMessage()">Send</button>
-        </div>
+  <div class="container">
+    <div class="chat-header">
+      🤖 DeepSeek AI Assistant
+    </div>
+    
+    <div id="messages" role="log" aria-live="polite" aria-atomic="false"></div>
+    
+    <div class="input-area">
+      <div class="input-container">
+        <textarea 
+          id="userInput" 
+          placeholder="Ask DeepSeek AI anything... (Shift+Enter for newline)" 
+          rows="1"
+          aria-label="Message input"
+        ></textarea>
+      </div>
+      <button id="sendButton" onclick="sendMessage()" aria-label="Send message">
+        Send
+      </button>
     </div>
 
-    <!-- Custom Script -->
-    <script src="${scriptUri}"></script>
+    <div class="status-indicator">
+      <span class="status-dot offline"></span>
+      <span>Ollama: Checking...</span>
+      <button onclick="checkOllamaStatus()" class="refresh-btn">🔄 Refresh</button>
+    </div>
+    <p class="note">💡 <strong>Note:</strong> The extension will wait as long as needed for responses - no time limits!</p>
+  </div>
 
-    <!-- ✅ Fix: Initialize Highlight.js after the DOM is ready -->
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll("pre code").forEach((block) => {
-                hljs.highlightElement(block);
-            });
-        });
-    </script>
+  <script>
+    // Make markdown-it available globally
+    window.markdownit = window.markdownit || null;
+    window.markdownitHighlightjs = window.markdownitHighlightjs || null;
+    window.hljs = window.hljs || null;
+  </script>
+  <script src="${scriptUri}"></script>
 </body>
+</html>

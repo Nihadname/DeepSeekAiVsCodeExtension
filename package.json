@@ -1,7 +1,7 @@
 {
   "name": "deepseekaiextension",
   "displayName": "DeepSeekAiExtension",
-  "description": "",
+  "description": "DeepSeek AI Assistant - Chat with AI directly in VS Code",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.96.0"
@@ -9,21 +9,47 @@
   "categories": [
     "Other"
   ],
-"activationEvents": [
-  "onCommand:deepseekaiextension.openPanel"
-],  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
   "contributes": {
-  "commands": [
-    {
-      "command": "deepseekaiextension.helloWorld",
-      "title": "Hello World"
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "deepseek-sidebar",
+          "title": "DeepSeek AI",
+          "icon": "$(lightbulb)"
+        }
+      ]
     },
-    {
-      "command": "deepseekaiextension.openPanel",
-      "title": "Open DeepSeek AI Panel"
+    "views": {
+      "deepseek-sidebar": [
+        {
+          "type": "webview",
+          "id": "deepseekView",
+          "name": "DeepSeek AI Chat",
+          "when": "true"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "deepseekaiextension.focusView",
+        "title": "Focus DeepSeek AI Chat",
+        "category": "DeepSeek AI"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "deepseekaiextension.focusView",
+          "when": "view == deepseekView",
+          "group": "navigation"
+        }
+      ]
     }
-  ]
-},
+  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
