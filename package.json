@@ -38,6 +38,21 @@
         "command": "deepseekaiextension.focusView",
         "title": "Focus DeepSeek AI Chat",
         "category": "DeepSeek AI"
+      },
+      {
+        "command": "deepseekaiextension.newSession",
+        "title": "Start New Chat Session",
+        "category": "DeepSeek AI"
+      },
+      {
+        "command": "deepseekaiextension.setUserId",
+        "title": "Set User ID",
+        "category": "DeepSeek AI"
+      },
+      {
+        "command": "deepseekaiextension.sessionInfo",
+        "title": "Show Session Info",
+        "category": "DeepSeek AI"
       }
     ],
     "menus": {
@@ -70,7 +85,10 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.14.1",
+    "@types/uuid": "^10.0.0",
     "deepseek": "^0.0.2",
-    "ollama": "^0.5.12"
+    "ollama": "^0.5.12",
+    "uuid": "^11.1.0"
   }
 }
