@@ -109,14 +109,16 @@ async function initializeQdrantCollection(): Promise<void> {
  */
 async function getEmbedding(text: string): Promise<number[]> {
     try {
+        console.log(`🔄 Getting embedding for: "${text.substring(0, 50)}..."`);
+        
         const res = await fetch('http://localhost:11434/api/embeddings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: 'nomic-embed-text',
                 prompt: text
-            })
-            // No signal/timeout - let it run as long as needed
+            }),
+            signal: AbortSignal.timeout(60000) // 60 second timeout - much longer
         });
 
         if (!res.ok) {
@@ -124,9 +126,10 @@ async function getEmbedding(text: string): Promise<number[]> {
         }
 
         const json = await res.json();
+        console.log(`✅ Embedding generated successfully`);
         return json.embedding;
     } catch (error) {
-        console.error('Error getting embedding:', error);
+        console.error('❌ Error getting embedding:', error);
         throw error; // Re-throw to let caller handle it
     }
 }
@@ -373,13 +376,13 @@ class DeepSeekViewProvider implements vscode.WebviewViewProvider {
             // Check if the specific model is available
             const modelData = await healthCheck.json();
             const modelExists = modelData.models?.some((model: any) => 
-                model.name === 'deepseek-coder:6.7b'
+                model.name === 'qwen2.5-coder:14b'
             );
 
             if (!modelExists) {
                 this._view.webview.postMessage({ 
                     command: 'responseChunk', 
-                    text: '❌ **Model not found!**\n\nThe DeepSeek model is not installed.\n\n**To install it, run:**\n```bash\nollama pull deepseek-coder:6.7b\n```\n\nThis may take a few minutes depending on your internet connection.',
+                    text: '❌ **Model not found!**\n\nThe Qwen2.5 Coder model is not installed.\n\n**To install it, run:**\n```bash\nollama pull qwen2.5-coder:14b\n```\n\nThis may take a few minutes depending on your internet connection.',
                     isFirst: true
                 });
                 this._view.webview.postMessage({ command: 'responseComplete' });
@@ -399,7 +402,7 @@ class DeepSeekViewProvider implements vscode.WebviewViewProvider {
                     errorMessage = '❌ **Connection Timed Out**\n\nThe connection to Ollama timed out. This could mean:\n- Ollama is not running.\n- It is starting up and not yet ready.\n- A firewall is blocking the connection.';
                 }
             } else {
-                 errorMessage = '❌ **Ollama is not running!**\n\nTo use DeepSeek AI:\n\n1. **Install Ollama** from https://ollama.ai\n2. **Start Ollama** (e.g., run `ollama serve` in a terminal)\n3. **Pull the model**: `ollama pull deepseek-coder:6.7b`\n4. **Try again after starting Ollama.**';
+                 errorMessage = '❌ **Ollama is not running!**\n\nTo use Qwen2.5 Coder AI:\n\n1. **Install Ollama** from https://ollama.ai\n2. **Start Ollama** (e.g., run `ollama serve` in a terminal)\n3. **Pull the model**: `ollama pull qwen2.5-coder:14b`\n4. **Try again after starting Ollama.**';
             }
             
             this._view.webview.postMessage({ 
